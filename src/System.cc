@@ -323,18 +323,23 @@ void System::Shutdown()
     if(mpViewer)
     {
         mpViewer->RequestFinish();
-        while(!mpViewer->isFinished())
+        while(!mpViewer->isFinished()){
             usleep(5000);
+        }
     }
 
     // Wait until all thread have effectively stopped
     while(!mpLocalMapper->isFinished() || !mpLoopCloser->isFinished() || mpLoopCloser->isRunningGBA())
     {
+        // cout << "mpLocalMapper->isFinished(): " << mpLocalMapper->isFinished() << endl;
+        // cout << "mpLoopCloser->isFinished(): " << mpLoopCloser->isFinished() << endl;
+        // cout << "mpLoopCloser->isRunningGBA(): " << mpLoopCloser->isRunningGBA() << endl;
+
         usleep(5000);
     }
 
-    if(mpViewer)
-        pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+    // if(mpViewer)
+    //     pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 }
 
 void System::SaveTrajectoryTUM(const string &filename)

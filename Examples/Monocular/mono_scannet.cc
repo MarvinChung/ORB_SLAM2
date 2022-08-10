@@ -1,5 +1,5 @@
 /**
-* This file is part of ORB-SLAM2.
+* This file modified from ORB-SLAM2.
 *
 * Copyright (C) 2014-2016 Raúl Mur-Artal <raulmur at unizar dot es> (University of Zaragoza)
 * For more information see <https://github.com/raulmur/ORB_SLAM2>
@@ -24,6 +24,11 @@
 #include<fstream>
 #include<chrono>
 #include<unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <dirent.h>
+
 
 #include<opencv2/core/core.hpp>
 #include<opencv2/imgcodecs/legacy/constants_c.h>
@@ -32,22 +37,21 @@
 
 using namespace std;
 
-void LoadImages(const string &strFile, vector<string> &vstrImageFilenames,
-                vector<double> &vTimestamps);
+void LoadImages(const string &strFile, vector<string> &vstrImageFilenames);
+string GetDatasetName(const string &strSequencePath);
 
 int main(int argc, char **argv)
 {
     if(argc != 4)
     {
-        cerr << endl << "Usage: ./mono_tum path_to_vocabulary path_to_settings path_to_sequence" << endl;
+        cerr << endl << "Usage: " << argv[0] << " path_to_vocabulary path_to_settings path_to_sequence" << endl;
         return 1;
     }
 
     // Retrieve paths to images
     vector<string> vstrImageFilenames;
-    vector<double> vTimestamps;
-    string strFile = string(argv[3])+"/rgb.txt";
-    LoadImages(strFile, vstrImageFilenames, vTimestamps);
+    string strFile = string(argv[3])+"/color";
+    LoadImages(strFile, vstrImageFilenames);
 
     int nImages = vstrImageFilenames.size();
 
@@ -67,50 +71,33 @@ int main(int argc, char **argv)
     for(int ni=0; ni<nImages; ni++)
     {
         // Read image from file
-        im = cv::imread(string(argv[3])+"/"+vstrImageFilenames[ni],CV_LOAD_IMAGE_UNCHANGED);
-        double tframe = vTimestamps[ni];
+        im = cv::imread(strFile+"/"+vstrImageFilenames[ni],CV_LOAD_IMAGE_UNCHANGED);
+        cout << vstrImageFilenames[ni] << endl;
+
+        double tframe = ni;
 
         if(im.empty())
         {
             cerr << endl << "Failed to load image at: "
-                 << string(argv[3]) << "/" << vstrImageFilenames[ni] << endl;
+                 << strFile << "/" << vstrImageFilenames[ni] << endl;
             return 1;
         }
 
-#ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
-#endif
 
         // Pass the image to the SLAM system
         SLAM.TrackMonocular(im,tframe);
 
-#ifdef COMPILEDWITHC11
         std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-#else
-        std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
-#endif
 
         double ttrack= std::chrono::duration_cast<std::chrono::duration<double> >(t2 - t1).count();
-
         vTimesTrack[ni]=ttrack;
 
-        // Wait to load the next frame
-        double T=0;
-        if(ni<nImages-1)
-            T = vTimestamps[ni+1]-tframe;
-        else if(ni>0)
-            T = tframe-vTimestamps[ni-1];
-
-        if(ttrack<T)
-            usleep((T-ttrack)*1e6);
     }
 
-    // Stop all threads
+    // Stop orb-viewer and tracking. 
+    // The user can watch the Nerf screen
     SLAM.Shutdown();
-
-    cout << "Shutdown SLAM" << endl;
 
     // Tracking time statistics
     sort(vTimesTrack.begin(),vTimesTrack.end());
@@ -124,36 +111,56 @@ int main(int argc, char **argv)
     cout << "mean tracking time: " << totaltime/nImages << endl;
 
     // Save camera trajectory
-    SLAM.SaveKeyFrameTrajectoryTUM("KeyFrameTrajectory.txt");
-
+    SLAM.SaveKeyFrameTrajectoryTUM("scannet.txt");
+    
     return 0;
 }
 
-void LoadImages(const string &strFile, vector<string> &vstrImageFilenames, vector<double> &vTimestamps)
-{
-    ifstream f;
-    f.open(strFile.c_str());
+void ls(const string &path, vector<string> &vstrImageFilenames) {
+    DIR *mydir;
+    struct dirent *myfile;
+    struct stat mystat;
 
-    // skip first three lines
-    string s0;
-    getline(f,s0);
-    getline(f,s0);
-    getline(f,s0);
-
-    while(!f.eof())
-    {
-        string s;
-        getline(f,s);
-        if(!s.empty())
-        {
-            stringstream ss;
-            ss << s;
-            double t;
-            string sRGB;
-            ss >> t;
-            vTimestamps.push_back(t);
-            ss >> sRGB;
-            vstrImageFilenames.push_back(sRGB);
-        }
+    mydir = opendir(path.c_str());
+    if (!mydir) {
+        cerr << "Unable to open " << path << endl;
+        exit(1);
     }
+    while((myfile = readdir(mydir)) != NULL)
+    {
+        stat(myfile->d_name, &mystat); 
+        std::string filename = std::string(myfile->d_name);
+        if (filename != "." && filename != "..")
+            vstrImageFilenames.push_back(filename);
+    }
+    closedir(mydir);
+    
+    sort(vstrImageFilenames.begin(), 
+        vstrImageFilenames.end(), 
+        [](string a, string b) {
+            return stoi(a) < stoi(b);
+    });
+}
+
+void LoadImages(const string &strFile, vector<string> &vstrImageFilenames)
+{
+    ls(strFile, vstrImageFilenames);
+}
+
+string GetDatasetName(const string &strSequencePath) 
+{
+    string s(strSequencePath);
+    std::string delimiter = "/";
+
+    size_t pos = 0;
+    std::string token;
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        token = s.substr(0, pos);
+        s.erase(0, pos + delimiter.length());
+    }
+
+    if (s.length() == 0)
+        return token;
+    else
+        return s;
 }

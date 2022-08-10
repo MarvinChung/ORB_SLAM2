@@ -1,0 +1,83 @@
+%YAML:1.0
+
+#--------------------------------------------------------------------------------------------
+# Camera Parameters. Adjust them!
+#--------------------------------------------------------------------------------------------
+
+# Camera calibration and distortion parameters (OpenCV) 
+Camera.fx: 1169.621094
+Camera.fy: 1167.105103
+Camera.cx: 646.295044
+Camera.cy: 489.927032
+
+Camera.k1: 0.0 
+Camera.k2: 0.0 
+Camera.p1: 0.0 
+Camera.p2: 0.0 
+
+Camera.width: 1296 
+Camera.height: 968
+
+# Camera frames per second 
+Camera.fps: 30.0
+
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+
+# Instant-ngp needs at least provide (x_fov, y_fov) or (fl_x, fl_y) or (camera_angle_x, camera_angle_y) for each frame
+# Although each frame may have different fov. Now assume they are all same.
+# Camera.camera_angle_x: 1.0118571687297542 
+# Camera.camera_angle_y: 0.7862306424696134
+
+#--------------------------------------------------------------------------------------------
+# ORB Parameters
+#--------------------------------------------------------------------------------------------
+
+# ORB Extractor: Number of features per image
+ORBextractor.nFeatures: 6000
+
+# ORB Extractor: Scale factor between levels in the scale pyramid 	
+ORBextractor.scaleFactor: 1.2
+
+# ORB Extractor: Number of levels in the scale pyramid	
+ORBextractor.nLevels: 8
+
+# ORB Extractor: Fast threshold
+# Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
+# Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
+# You can lower these values if your images have low contrast			
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+#--------------------------------------------------------------------------------------------
+# Viewer Parameters
+#--------------------------------------------------------------------------------------------
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3
+Viewer.ViewpointX: 0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -1.8
+Viewer.ViewpointF: 500
+
+#--------------------------------------------------------------------------------------------
+# Nerf Parameters
+#--------------------------------------------------------------------------------------------
+Nerf.aabb_scale: 8
+# Nerf.scale: 3.9638
+
+# Nerf.scale: 1.308054
+# Nerf.offset: [0.5, 1.0, -0.5]
+
+Nerf.scale: 0.4
+Nerf.offset: [0.5, 1.0, -0.5]
+
+# Nerf.offset: [2.4829162042246433, 1.7499091784248957, 4.41933949231343]
+# Nerf.offset: [2.9829162042246433, 2.2499091784248957, 4.91933949231343]
+# Nerf.offset: [4.41933949231343, 2.4829162042246433, 1.7499091784248957]
+Nerf.network_config_path: "./Thirdparty/instant-ngp-kf/configs/nerf/base.json"
+
+

@@ -111,3 +111,6 @@ add_executable(mono_euroc
 Examples/Monocular/mono_euroc.cc)
 target_link_libraries(mono_euroc ${PROJECT_NAME})
 
+add_executable(mono_scannet
+Examples/Monocular/mono_scannet.cc)
+target_link_libraries(mono_scannet ${PROJECT_NAME})
